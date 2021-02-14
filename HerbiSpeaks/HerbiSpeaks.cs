@@ -1928,7 +1928,7 @@ namespace HerbiSpeaks
         }
 
 ///* MEDIA ***************************************************************************
-        private bool PlayMedia(string media)
+        private bool PlayMedia(string mediaFullPath)
         {
             if (axWindowsMediaPlayer1 == null)
             {
@@ -1941,20 +1941,41 @@ namespace HerbiSpeaks
 
             bool playingMedia = false;
 
-            if ((media != null) && (media != "") && !File.Exists(media))
+            // Were we supplied with a media file path?
+            if (!String.IsNullOrEmpty(mediaFullPath))
             {
-                MessageBox.Show(this,
-                    "Sorry, the media file \"" + media + "\" couldn't be found on this computer.\r\n\r\n" + 
-                    "Please copy the media file into the referenced folder on this computer, or reference " + 
-                    "a different media file which is available on this computer.",
-                    "Herbi Speaks");
+                // Does this file exist?
+                if (!File.Exists(mediaFullPath))
+                {
+                    // The media file wasn't found at the referenced path, so see if it exists
+                    // in the same folder as where the Herbi Speaks board file is located.
+                    if (!String.IsNullOrEmpty(mediaFullPath) && !String.IsNullOrEmpty(_currentFilename))
+                    {
+                        var filePathAttempt = Path.GetDirectoryName(_currentFilename) +
+                            "\\" + Path.GetFileName(mediaFullPath);
 
-                Debug.WriteLine("Herbi Speaks: Media file not found, " + media);
-                
-                media = null;
+                        if (File.Exists(filePathAttempt))
+                        {
+                            // Use this backup path.
+                            mediaFullPath = filePathAttempt;
+                        }
+                        else
+                        {
+                            MessageBox.Show(this,
+                                "Sorry, the media file \"" + mediaFullPath + "\" couldn't be found on this computer.\r\n\r\n" +
+                                "Please copy the media file into the referenced folder on this computer, or reference " +
+                                "a different media file which is available on this computer.",
+                                "Herbi Speaks");
+
+                            Debug.WriteLine("Herbi Speaks: Media file not found, " + mediaFullPath);
+
+                            mediaFullPath = null;
+                        }
+                    }
+                }
             }
 
-            if ((media == null) || (media == ""))
+            if (String.IsNullOrEmpty(mediaFullPath))
             {
                 _outputInProgress = false;
 
@@ -1968,7 +1989,7 @@ namespace HerbiSpeaks
             }
             else
             {
-                string mediaFileExtension = Path.GetExtension(media).ToLower();
+                string mediaFileExtension = Path.GetExtension(mediaFullPath).ToLower();
                 bool isVideo = (mediaFileExtension == ".asf" || mediaFileExtension == ".avi" ||
                                 mediaFileExtension == ".mov" || mediaFileExtension == ".mp4" ||
                                 mediaFileExtension == ".qt" || mediaFileExtension == ".wm" ||
@@ -2005,7 +2026,7 @@ namespace HerbiSpeaks
 
                 try
                 {
-                    axWindowsMediaPlayer1.URL = media;
+                    axWindowsMediaPlayer1.URL = mediaFullPath;
 
                     playingMedia = true;
 
