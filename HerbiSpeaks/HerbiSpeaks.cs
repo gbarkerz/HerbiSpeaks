@@ -175,6 +175,7 @@ namespace HerbiSpeaks
             Rectangle rectWorkingArea = Screen.GetWorkingArea(this);
             this.Location = rectWorkingArea.Location;
             this.Size = rectWorkingArea.Size;
+            this.WindowState = FormWindowState.Maximized;
 
             this.FormClosing += new FormClosingEventHandler(HerbiSpeaks_FormClosing);
 
@@ -859,23 +860,35 @@ namespace HerbiSpeaks
 
             if (fileDlg.ShowDialog(this) == System.Windows.Forms.DialogResult.OK)
             {
-                _fIsDirty = true;
-
-                if (fHoverPicture)
+                try
                 {
-                    _currentButton.ImageHoverExtension = Path.GetExtension(fileDlg.FileName);
-                    _currentButton.ImageHoverFull = Image.FromFile(fileDlg.FileName);
+                    if (fHoverPicture)
+                    {
+                        _currentButton.ImageHoverExtension = Path.GetExtension(fileDlg.FileName);
+                        _currentButton.ImageHoverFull = Image.FromFile(fileDlg.FileName);
+                    }
+                    else
+                    {
+                        _currentButton.ImageExtension = Path.GetExtension(fileDlg.FileName);
+                        _currentButton.ImageFull = Image.FromFile(fileDlg.FileName);
+                    }
+
+                    _fIsDirty = true;
+
+                    SetTextPositionOnButton(_currentButton);
+
+                    _mostRecentPictureFolder = Path.GetDirectoryName(fileDlg.FileName);
+                    Settings1.Default.MostRecentPictureFolder = _mostRecentPictureFolder;
                 }
-                else
+                catch (Exception ex)
                 {
-                    _currentButton.ImageExtension = Path.GetExtension(fileDlg.FileName);
-                    _currentButton.ImageFull = Image.FromFile(fileDlg.FileName);
+                    MessageBox.Show(this,
+                        "Sorry, the media file \"" + fileDlg.FileName + 
+                        "\" couldn't be set on the button.",
+                        "Herbi Speaks");
+
+                    Debug.WriteLine("Error loading picture onto button: " + ex.Message);
                 }
-
-                SetTextPositionOnButton(_currentButton);
-
-                _mostRecentPictureFolder = Path.GetDirectoryName(fileDlg.FileName);
-                Settings1.Default.MostRecentPictureFolder = _mostRecentPictureFolder;
             }
         }
 

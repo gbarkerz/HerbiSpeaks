@@ -7,6 +7,8 @@ using System.Xml;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Diagnostics;
+using System.Drawing.Drawing2D;
 
 namespace HerbiSpeaks
 {
@@ -61,6 +63,8 @@ namespace HerbiSpeaks
 
         private void LoadHerbiFile(string fileToOpen)
         {
+            Cursor.Current = Cursors.WaitCursor;
+
             // Clear all the current content.
             ResetContent();
 
@@ -82,11 +86,13 @@ namespace HerbiSpeaks
                     "Sorry, this file can't be opened.\r\n\r\nDetails: " + 
                         ex.Message, "Herbi Speaks");                
             }
+
+            Cursor.Current = Cursors.Default;
         }
 
         private void SetCaptionText()
         {
-            string captionText = "Herbi Speaks V3.1";
+            string captionText = "Herbi Speaks V3.3";
 
             if (_currentFilename != "")
             {
@@ -744,50 +750,108 @@ namespace HerbiSpeaks
                 button.TextPosition = "Middle";
             }
 
-            XmlNode nodePicture = nodeButton.SelectSingleNode("PictureData");
-            if (nodePicture != null)
+            int pictureDataLength = 0;
+            int hoverPictureDataLength = 0;
+
+            try
             {
-                XmlNode nodeLength = nodePicture.Attributes.GetNamedItem("Length");
-                if (nodeLength != null)
+                XmlNode nodePicture = nodeButton.SelectSingleNode("PictureData");
+                if (nodePicture != null)
                 {
-                    int pictureDataLength = Convert.ToInt32(nodeLength.Value);
-                    if (pictureDataLength > 0)
+                    XmlNode nodeLength = nodePicture.Attributes.GetNamedItem("Length");
+                    if (nodeLength != null)
                     {
-                        byte[] bytes = Convert.FromBase64String(nodePicture.InnerXml);
+                        pictureDataLength = Convert.ToInt32(nodeLength.Value);
+                        Debug.WriteLine("PictureData Length: " + pictureDataLength);
+                        if (pictureDataLength > 0)
+                        {
+                            byte[] bytes = Convert.FromBase64String(nodePicture.InnerXml);
 
-                        MemoryStream stream = new MemoryStream(bytes);
-                        XmlTextReader textReader = new XmlTextReader(stream);
-                        textReader.ReadBase64(bytes, 0, bytes.Length);
+                            using (MemoryStream stream = new MemoryStream(bytes))
+                            {
+                                var image = Image.FromStream(stream);
 
-                        button.ImageFull = Image.FromStream(stream);
+                                // Reduce the memory load due to the original (potentially very large)
+                                // picture, by resizing it down to the size of the button.
+                                button.ImageFull = ResizeImage(image, button.Width, button.Height);
+
+                                image.Dispose();
+                            }
+                        }
+                    }
+                }
+
+                XmlNode nodeHoverPicture = nodeButton.SelectSingleNode("HoverPictureData");
+                if (nodeHoverPicture != null)
+                {
+                    XmlNode nodeLength = nodeHoverPicture.Attributes.GetNamedItem("Length");
+                    if (nodeLength != null)
+                    {
+                        hoverPictureDataLength = Convert.ToInt32(nodeLength.Value);
+                        Debug.WriteLine("HoverPictureData Length: " + hoverPictureDataLength);
+                        if (hoverPictureDataLength > 0)
+                        {
+                            byte[] bytes = Convert.FromBase64String(nodeHoverPicture.InnerXml);
+
+                            using (MemoryStream stream = new MemoryStream(bytes))
+                            {
+                                var image = Image.FromStream(stream);
+
+                                button.ImageHoverFull = ResizeImage(image, button.Width, button.Height);
+
+                                image.Dispose();
+                            }
+                        }
                     }
                 }
             }
-
-            XmlNode nodeHoverPicture = nodeButton.SelectSingleNode("HoverPictureData");
-            if (nodeHoverPicture != null)
+            catch (Exception ex)
             {
-                XmlNode nodeLength = nodeHoverPicture.Attributes.GetNamedItem("Length");
-                if (nodeLength != null)
-                {
-                    int pictureDataLength = Convert.ToInt32(nodeLength.Value);
-                    if (pictureDataLength > 0)
-                    {
-                        byte[] bytes = Convert.FromBase64String(nodeHoverPicture.InnerXml);
+                Debug.WriteLine("Error loading picture on board " + boardIndex + ": " + ex.Message);
+            }
 
-                        MemoryStream stream = new MemoryStream(bytes);
-                        XmlTextReader textReader = new XmlTextReader(stream);
-                        textReader.ReadBase64(bytes, 0, bytes.Length);
-
-                        button.ImageHoverFull = Image.FromStream(stream);
-                    }
-                }
+            // When loading pictures onto buttons, first the original (potentially very large)
+            // picture is loaded from file, and then resized down to the size of the buttons.
+            // When the file contains many large pictures, this can result in an OOM exception
+            // when loading the pictures. As such force some garbage collection to reduce the 
+            // chances of the exception being raised.
+            if ((pictureDataLength > 0) || (hoverPictureDataLength > 0))
+            {
+                GC.Collect();
             }
 
             // Now present the image in the most appropriate manner.
             SetTextPositionOnButton(button);
 
             return button;
+        }
+
+        // Barker: Copied most of this helpful function from StackOverflow.
+        public static Bitmap ResizeImage(Image image, int width, int height)
+        {
+            var destRect = new Rectangle(0, 0, width, height);
+            var destImage = new Bitmap(width, height);
+
+            destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
+
+            using (var graphics = Graphics.FromImage(destImage))
+            {
+                graphics.CompositingMode = CompositingMode.SourceCopy;
+                graphics.CompositingQuality = CompositingQuality.HighQuality;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphics.SmoothingMode = SmoothingMode.HighQuality;
+                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                using (var wrapMode = new ImageAttributes())
+                {
+                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
+                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
+                }
+
+                graphics.Dispose();
+            }
+
+            return destImage;
         }
 
         private void ReadDefaultFontDetails(XmlNode nodeBoard)
