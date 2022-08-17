@@ -1,0 +1,5 @@
+This is the Herbi Speaks Privacy Statement.
+
+The only data accessed or stored by the Herbi Speaks app are the text entered directly by the user at the app, and picture data for pictures explicitly selected by the user at the app. If the user selects media files for media to be shown in the app, references to those media files are stored in the app. The Herbi Speaks app does not access or collect any information not explicitly entered or selected at the app by the user. The app does not transmit any information.
+
+To learn more about the app, including access to all the source code for the app, please visit https://github.com/gbarkerz/HerbiSpeaks.
