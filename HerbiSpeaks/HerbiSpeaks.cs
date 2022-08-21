@@ -518,7 +518,7 @@ namespace HerbiSpeaks
         private void AddPicture_Click(object sender, System.EventArgs e)
         {
             OpenFileDialog fileDlg = new OpenFileDialog();
-            fileDlg.Filter = "Image Files (*.jpg, *.png, *.bmp)|*.jpg;*.png;*.bmp|All Files (*.*)|*.*";
+            fileDlg.Filter = "Image Files (*.jpg, *.jpeg, *.png, *.bmp)|*.jpg;*.jpeg;*.png;*.bmp|All Files (*.*)|*.*";
 
             if (_mostRecentPictureFolder != "")
             {
@@ -607,37 +607,53 @@ namespace HerbiSpeaks
             if (button.IsPictureButton)
             {
                 button.ImageExtension = Path.GetExtension(pictureFileName);
-                button.ImageFull = Image.FromFile(pictureFileName);
 
-                button.Text = "";
-                button.AccessibleName = "";
-
-                button.TextAlign = ContentAlignment.MiddleCenter;
-                button.ImageAlign = ContentAlignment.MiddleCenter;
-
-                int maxDimension = 400;
-
-                if ((button.ImageFull.Width <= maxDimension) &&
-                    (button.ImageFull.Height <= maxDimension))
+                try
                 {
-                    button.Width = button.ImageFull.Width;
-                    button.Height = button.ImageFull.Height;
-                }
-                else
-                {
-                    if (button.ImageFull.Width > button.ImageFull.Height)
+                    button.ImageFull = Image.FromFile(pictureFileName);
+
+                    button.Text = "";
+                    button.AccessibleName = "";
+
+                    button.TextAlign = ContentAlignment.MiddleCenter;
+                    button.ImageAlign = ContentAlignment.MiddleCenter;
+
+                    int maxDimension = 400;
+
+                    if ((button.ImageFull.Width <= maxDimension) &&
+                        (button.ImageFull.Height <= maxDimension))
                     {
-                        button.Width = maxDimension;
-                        button.Height = ((button.Width * button.ImageFull.Height) / button.ImageFull.Width);
+                        button.Width = button.ImageFull.Width;
+                        button.Height = button.ImageFull.Height;
                     }
                     else
                     {
-                        button.Height = maxDimension;
-                        button.Width = ((button.Height * button.ImageFull.Width) / button.ImageFull.Height);
+                        if (button.ImageFull.Width > button.ImageFull.Height)
+                        {
+                            button.Width = maxDimension;
+                            button.Height = ((button.Width * button.ImageFull.Height) / button.ImageFull.Width);
+                        }
+                        else
+                        {
+                            button.Height = maxDimension;
+                            button.Width = ((button.Height * button.ImageFull.Width) / button.ImageFull.Height);
+                        }
                     }
-                }
 
-                ReloadThumbnail(button);
+                    ReloadThumbnail(button);
+                }
+                catch (Exception ex)
+                {
+                    // Don't leave an unusable button on the board.
+                    this.Controls.Remove(button);
+
+                    MessageBox.Show(this,
+                        "Sorry, the picture \"" + pictureFileName +
+                        "\" couldn't be loaded.\r\n\r\n" + ex.Message,
+                        "Herbi Speaks");
+
+                    Debug.WriteLine("Error loading picture onto button: " + ex.Message);
+                }
             }
             else // This is not a picture button.
             { 
@@ -847,7 +863,7 @@ namespace HerbiSpeaks
         private void SetButtonPicture(bool fHoverPicture)
         {
             OpenFileDialog fileDlg = new OpenFileDialog();
-            fileDlg.Filter = "Image Files (*.jpg, *.png, *.bmp)|*.jpg;*.png;*.bmp|All Files (*.*)|*.*";
+            fileDlg.Filter = "Image Files (*.jpg, *.jpeg, *.png, *.bmp)|*.jpg;*.jpeg;*.png;*.bmp|All Files (*.*)|*.*";
 
             if (_mostRecentPictureFolder != "")
             {
@@ -883,8 +899,8 @@ namespace HerbiSpeaks
                 catch (Exception ex)
                 {
                     MessageBox.Show(this,
-                        "Sorry, the media file \"" + fileDlg.FileName + 
-                        "\" couldn't be set on the button.",
+                        "Sorry, the picture file \"" + fileDlg.FileName +
+                        "\" couldn't be set on the button.\r\n\r\n" + ex.Message,
                         "Herbi Speaks");
 
                     Debug.WriteLine("Error loading picture onto button: " + ex.Message);

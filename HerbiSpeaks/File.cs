@@ -815,10 +815,13 @@ namespace HerbiSpeaks
             // When the file contains many large pictures, this can result in an OOM exception
             // when loading the pictures. As such force some garbage collection to reduce the 
             // chances of the exception being raised.
-            if ((pictureDataLength > 0) || (hoverPictureDataLength > 0))
-            {
-                GC.Collect();
-            }
+
+            // While explicitly calling GC.Collect() here during development seemed to avoid 
+            // an OOM exception, recent testing seemed to suggest it's not required.
+            //if ((pictureDataLength > 0) || (hoverPictureDataLength > 0))
+            //{
+            //    GC.Collect();
+            //}
 
             // Now present the image in the most appropriate manner.
             SetTextPositionOnButton(button);
