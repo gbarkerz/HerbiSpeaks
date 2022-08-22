@@ -108,7 +108,7 @@
             this.MinimizeBox = false;
             this.Name = "HelpAbout";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "About Herbi Speaks V3.3";
+            this.Text = "About Herbi Speaks V3.4";
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

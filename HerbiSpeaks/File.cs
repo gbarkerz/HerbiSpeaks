@@ -92,7 +92,7 @@ namespace HerbiSpeaks
 
         private void SetCaptionText()
         {
-            string captionText = "Herbi Speaks V3.3";
+            string captionText = "Herbi Speaks V3.4";
 
             if (_currentFilename != "")
             {
